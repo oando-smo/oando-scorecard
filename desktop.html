@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Oando Scorecard</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #F4F5FA; overflow: hidden; font-family: Arial, Helvetica, sans-serif; }
+  .frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .frame.waiting { visibility: hidden; }
+  #gate { position: absolute; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center;
+          background: #F4F5FA; padding: 16px; box-sizing: border-box; overflow: auto; }
+  #gate.show { display: flex; }
+  .card { width: 100%; max-width: 520px; background: #fff; border: 1px solid #E3E5EE; border-radius: 14px;
+          box-shadow: 0 1px 3px rgba(23,26,80,.08); padding: 24px; box-sizing: border-box; color: #3B3E6B; }
+  .card h1 { margin: 0 0 8px; font-size: 22px; color: #2E3092; }
+  .card p { margin: 0 0 14px; font-size: 15px; line-height: 1.45; }
+  .btn { display: block; width: 100%; box-sizing: border-box; text-align: center; border: 0; border-radius: 10px;
+         padding: 14px 16px; font-size: 16px; font-weight: 700; cursor: pointer; text-decoration: none; }
+  .btn.main { background: #2E3092; color: #fff; }
+  .btn.alt { background: #EEF0F6; color: #2E3092; margin-top: 10px; }
+  details { margin-top: 16px; font-size: 14px; line-height: 1.5; }
+  summary { cursor: pointer; font-weight: 700; color: #2E3092; }
+  ol { margin: 8px 0 0; padding-left: 20px; }
+  code { background: #EEF0F6; border-radius: 5px; padding: 1px 6px; font-size: 13px; word-break: break-all; }
+  button.copy { margin-left: 6px; border: 1px solid #C9CCDD; background: #fff; border-radius: 6px; font-size: 12px; padding: 2px 8px; cursor: pointer; color: #2E3092; }
+  .small { font-size: 12px; color: #6B6E80; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="card">
+    <h1>Oando Scorecard</h1>
+    <p>This report signs you in with your Oando account. For that, your browser needs to allow Power BI and Microsoft sign in cookies on this page. Tap the button to accept and open the report.</p>
+    <button class="btn main" id="accept">Accept cookies and open report</button>
+    <a class="btn alt" id="direct" target="_blank" rel="noopener">Open report directly in Power BI</a>
+    <details id="help">
+      <summary>Report stuck on a sign in screen? Chrome and Edge fix</summary>
+      <p style="margin-top:8px">Chrome and Edge can block the cookies a framed Power BI report needs. Allow them once for this page:</p>
+      <p><b>Chrome</b></p>
+      <ol>
+        <li>Open <code id="c1">chrome://settings/cookies</code><button class="copy" data-copy="chrome://settings/cookies">Copy</button> in a new tab.</li>
+        <li>Under Sites allowed to use third party cookies, choose Add.</li>
+        <li>Enter <code>oando-smo.github.io</code> and tick Including third party cookies on this site, then Add.</li>
+      </ol>
+      <p style="margin-top:12px"><b>Edge</b></p>
+      <ol>
+        <li>Open <code id="c2">edge://settings/privacy</code><button class="copy" data-copy="edge://settings/privacy">Copy</button> in a new tab.</li>
+        <li>Under Tracking prevention, open Exceptions and add <code>oando-smo.github.io</code>.</li>
+        <li>Open <code>edge://settings/content/cookies</code><button class="copy" data-copy="edge://settings/content/cookies">Copy</button>, and under Allow add <code>[*.]powerbi.com</code> and <code>[*.]microsoftonline.com</code>.</li>
+      </ol>
+      <p class="small">Then come back to this page and reload it. Browser pages such as chrome:// cannot be opened from a link, so copy the address into a new tab.</p>
+    </details>
+  </div>
+</div>
+<iframe class="frame" id="f0" title="Oando Scorecard" allowfullscreen></iframe>
+
+<script>
+  // Power BI secure embed link (reportEmbed?reportId=...&autoAuth=true&ctid=...)
+  var BASE = "https://app.powerbi.com/reportEmbed?reportId=9e13d13a-4d49-4e5d-bfec-ecefa5ce1fe9&autoAuth=true&ctid=a3329a53-02fd-4abb-94cd-6d1b954419f6&filterPaneEnabled=false&navContentPaneEnabled=false";
+  // Landing pages: internal page names (the last part of the page URL in the Power BI Service).
+  // Leave a value empty to open the report on its default page.
+  var PAGES = { desktop: "f53aa1188d01355548ce", mobile: "e1ae4ecf0015a6108e07" };
+  var FORCE = "desktop";   // "" = pick by device, or "desktop" / "mobile"
+
+  function isPhone() {
+    var ua = navigator.userAgent || "";
+    if (/Android.+Mobile|iPhone|iPod|Windows Phone|Mobile Safari/i.test(ua) && !/iPad|Tablet/i.test(ua)) return true;
+    var small = Math.min(screen.width, screen.height) <= 600;
+    var touch = window.matchMedia && window.matchMedia("(pointer:coarse)").matches;
+    return small && touch;
+  }
+  function pickView() {
+    var q = "";
+    try { q = new URLSearchParams(location.search).get("view") || ""; } catch (e) {}
+    if (q === "desktop" || q === "mobile") return q;
+    if (FORCE === "desktop" || FORCE === "mobile") return FORCE;
+    return isPhone() ? "mobile" : "desktop";
+  }
+  var VIEW = pickView();
+  var REPORT_URL = BASE + (PAGES[VIEW] ? "&pageName=" + PAGES[VIEW] : "");
+
+  var KEY = "oando-scorecard-cookies-ok";
+  function ok() { try { return localStorage.getItem(KEY) === "1"; } catch (e) { return false; } }
+  function remember() { try { localStorage.setItem(KEY, "1"); } catch (e) {} }
+  var wantHelp = /[?&]help=1/.test(location.search);
+
+  var current = document.getElementById("f0");
+  var gate = document.getElementById("gate");
+  var started = false;
+  document.getElementById("direct").href = REPORT_URL;
+
+  function start() {
+    if (started) return;
+    started = true;
+    gate.classList.remove("show");
+    current.src = REPORT_URL;
+  }
+
+  // No auto refresh: the report loads once; viewers reload the page for newer data
+
+  document.getElementById("accept").onclick = function () { remember(); start(); };
+  var copies = document.querySelectorAll("button.copy");
+  for (var i = 0; i < copies.length; i++) {
+    copies[i].onclick = function () {
+      var t = this.getAttribute("data-copy"), b = this;
+      try { navigator.clipboard.writeText(t); b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1500); } catch (e) {}
+    };
+  }
+
+  if (ok() && !wantHelp) { start(); }
+  else {
+    gate.classList.add("show");
+    if (wantHelp) document.getElementById("help").open = true;
+  }
+</script>
+</body>
+</html>
