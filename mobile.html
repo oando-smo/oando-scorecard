@@ -97,33 +97,7 @@
     current.src = REPORT_URL;
   }
 
-  // ---- Auto refresh (renews the Power BI sign in before it expires) ----
-  // Every MIN minutes a fresh copy of the report loads in a hidden frame. 15 s after it has
-  // loaded it replaces the visible one, so the screen never goes blank and the embed token is
-  // renewed silently (the old frame is what used to show "Sign in" after a while).
-  // Reloads only happen while the tab is visible; a hidden tab catches up when it is shown.
-  var MIN = 20;
-  var pending = false;
-  function reload() {
-    if (!started) return;
-    if (document.hidden) { pending = true; return; }
-    pending = false;
-    var n = document.createElement("iframe");
-    n.className = "frame waiting";
-    n.title = "Oando Scorecard";
-    n.setAttribute("allowfullscreen", "");
-    n.onload = function () {
-      setTimeout(function () {
-        n.className = "frame";
-        if (current && current.parentNode) current.parentNode.removeChild(current);
-        current = n;
-      }, 15000);
-    };
-    n.src = REPORT_URL;
-    document.body.appendChild(n);
-  }
-  setInterval(reload, MIN * 60000);
-  document.addEventListener("visibilitychange", function () { if (!document.hidden && pending) reload(); });
+  // No auto refresh: the report loads once; viewers reload the page for newer data
 
   document.getElementById("accept").onclick = function () { remember(); start(); };
   var copies = document.querySelectorAll("button.copy");
